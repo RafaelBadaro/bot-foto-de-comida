@@ -23,6 +23,16 @@ npm install
 2. Um **QR Code** vai aparecer no seu terminal.
 3. Abra o WhatsApp no seu celular, vá em **Aparelhos Conectados** > **Conectar um aparelho** e escaneie o código da tela.
 
+## 🔄 3. Resetar a Sessão (forçar novo QR Code)
+
+Se precisar reconectar do zero (ex: trocar de número, resolver erro de versão do WhatsApp Web, ou a sessão parou de funcionar), apague as pastas de sessão e cache:
+
+```bash
+rm -rf .wwebjs_auth .wwebjs_cache
+```
+
+Depois rode `node bot.js` novamente — um novo QR Code vai aparecer pra escanear.
+
 ## ⚠️ Observações Importantes
 
 * **Cargo de Admin:** O número conectado ao bot **precisa ser Administrador** do grupo para conseguir mudar a foto de capa do perfil.
