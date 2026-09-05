@@ -2,21 +2,18 @@
 
 Bot em Node.js que monitora grupos. Ao responderem uma foto com a palavra **"Capa"**, o bot valida a imagem, atualiza o placar do autor e altera a foto de perfil do grupo.
 
-## 📦 1. Instalação e Dependências
+## 📦 1. Dependências
 
-Abra o terminal na pasta onde está o seu arquivo `bot.js` e execute os comandos abaixo na ordem indicada:
+**Instalar dependências:**
+```bash
+npm install
+```
 
-1. Inicialize o projeto Node.js para criar o arquivo de configuração:
-   ```bash
-   npm init -y
-   ```
+**Dependências do projeto:**
+- `whatsapp-web.js`
+- `qrcode-terminal`
 
-2. Instale as dependências obrigatórias do projeto:
-   ```bash
-   npm install whatsapp-web.js qrcode-terminal
-   ```
-
-## 🛠️ 2. Como Executar
+## 🛠️ 2. Como Executar (após instalar as dependências)
 
 1. Com as dependências instaladas, inicie o robô executando o comando:
    ```bash
