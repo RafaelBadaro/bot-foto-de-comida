@@ -8,6 +8,11 @@ const qrcode = require('qrcode-terminal');
 // Caminho do arquivo onde o contador será salvo
 const DATA_FILE = './contador_capas.json';
 
+// FIX: ID do grupo autorizado a usar o bot. Deixe vazio ('') na primeira vez rodando
+// pra descobrir o ID no terminal (veja o log '[INFO] Mensagem recebida do grupo:').
+// Depois de pegar o ID, cole ele aqui entre aspas, ex: '120363012345678901@g.us'
+const GRUPO_AUTORIZADO_ID = '120363418902089957@g.us';
+
 // Função para carregar os dados salvos
 function carregarDados() {
     if (fs.existsSync(DATA_FILE)) {
@@ -30,6 +35,13 @@ const client = new Client({
     puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
+    // DESATIVADO TEMPORARIAMENTE: comentado pra primeiro testar a captura do ID do grupo
+    // sem depender de ter uma URL válida aqui ainda. Descomenta (e preenche o remotePath)
+    // quando for de fato corrigir o erro do getQuotedMessage.
+    // ,webVersionCache: {
+    //     type: 'remote',
+    //     remotePath: 'COLE_AQUI_A_URL_RAW_DO_ARQUIVO_HTML_ESCOLHIDO'
+    // }
 });
 
 // Exibe o QR Code no terminal para você escanear com o celular
@@ -43,11 +55,24 @@ client.on('ready', () => {
     console.log('Bot de validação de Capas está online e operando nos grupos!');
 });
 
-// Monitora todas as mensagens que chegam
-client.on('message', async (msg) => {
+// Monitora TODAS as mensagens, incluindo as enviadas pelo próprio número do bot.
+// FIX: 'message' só captura mensagens de terceiros. 'message_create' captura tudo,
+// permitindo que o dono do número do bot também mande foto/participe da dinâmica de "capa".
+client.on('message_create', async (msg) => {
     try {
+        // FIX: como 'message_create' também dispara para as mensagens que O PRÓPRIO BOT envia
+        // (ex: a resposta de confirmação "Capa validada..."), sem esse filtro o bot entraria
+        // em looping tentando processar sua própria resposta como se fosse um comando.
+        // Aqui só bloqueamos mensagens próprias que sejam RESULTADO do bot (mídia ou o emoji de aviso),
+        // mas deixamos passar se o dono do bot mandar "capa" manualmente como qualquer outro usuário.
+        const ehRespostaDoProprioBot = msg.fromMe && msg.body && msg.body.startsWith('📸');
+        if (ehRespostaDoProprioBot) return;
+
         // 1. Verifica se a mensagem foi enviada dentro de um GRUPO
         if (!msg.from.endsWith('@g.us')) return;
+
+        // FIX: se um grupo autorizado foi definido, ignora qualquer mensagem vinda de outro grupo.
+        if (GRUPO_AUTORIZADO_ID && msg.from !== GRUPO_AUTORIZADO_ID) return;
 
         // 2. Valida se o texto exato digitado na mensagem é "Capa" (ignora maiúsculas/minúsculas e espaços)
         const textoFormatado = msg.body ? msg.body.trim().toLowerCase() : '';
@@ -62,8 +87,13 @@ client.on('message', async (msg) => {
                 
                 // Pega o ID único da mensagem com a imagem para evitar contar a mesma foto duas vezes
                 const fotoId = mensagemMarcada.id.id;
-                // Descobre quem foi a pessoa que enviou a FOTO original
-                const autorFoto = mensagemMarcada.author || mensagemMarcada.from;
+                // Descobre quem foi a pessoa que enviou a FOTO original.
+                // FIX: quando a FOTO foi enviada pelo próprio número do bot, o campo '.author'
+                // não vem preenchido e '.from' aponta pro ID do GRUPO (não da pessoa) — sem esse
+                // caso especial, o autor ficaria errado (o grupo levaria o crédito da foto).
+                const autorFoto = mensagemMarcada.fromMe
+                    ? client.info.wid._serialized
+                    : (mensagemMarcada.author || mensagemMarcada.from);
 
                 // Se essa foto específica já foi contabilizada, o bot ignora para evitar spam
                 if (bancoDados[fotoId]) {
